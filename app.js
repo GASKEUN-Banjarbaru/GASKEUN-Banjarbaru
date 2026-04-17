@@ -590,9 +590,9 @@ function renderPosyanduList() {
         ? `<span class="status-dot status-soon" title="Jadwal hari ini (di luar jam)"></span>`
         : `<span class="status-dot status-closed" title="Tutup hari ini"></span>`;
     const statusLabel = buka
-      ? `<span class="status-label open">Buka</span>`
+      ? `<span class="status-label open">Aktif</span>`
       : jadwalHariIni
-        ? `<span class="status-label soon">Hari ini</span>`
+        ? `<span class="status-label soon">Buka Hari Ini</span>`
         : `<span class="status-label closed">Tutup</span>`;
 
     return `
