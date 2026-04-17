@@ -40,6 +40,103 @@ function loadDadakanData() {
   return _dadakanCache;
 }
 
+// ─── Cek Status Buka/Tutup Skrining Mobile ───────────────
+/**
+ * Mengembalikan { buka: bool } untuk tempat skrining mobile.
+ * Field `hari` bisa berupa teks bebas: "Sabtu, 12 April", "Setiap Sabtu", dll.
+ * Field `jam_buka` format: "09.00 - 12.00" atau "09:00 - 12:00"
+ */
+function getMobileStatus(p) {
+  // Jika tidak ada jam_buka yang valid, anggap tidak bisa dicek
+  if (!p.jam_buka || p.jam_buka === '-' || p.jam_buka === '') {
+    return { buka: false, adaJadwal: false };
+  }
+
+  const now = new Date();
+  const hariMap = {
+    'minggu': 0, 'sunday': 0,
+    'senin': 1, 'monday': 1,
+    'selasa': 2, 'tuesday': 2,
+    'rabu': 3, 'wednesday': 3,
+    'kamis': 4, 'thursday': 4,
+    'jumat': 5, 'friday': 5,
+    'sabtu': 6, 'saturday': 6
+  };
+
+  const hariStr = (p.hari || '').toLowerCase();
+  const todayDay = now.getDay(); // 0=Minggu
+
+  // Cek apakah ada tanggal spesifik (misal: "12 April" atau "12/04") dalam field hari
+  const bulanMap = {
+    'jan': 0, 'januari': 0,
+    'feb': 1, 'februari': 1,
+    'mar': 2, 'maret': 2,
+    'apr': 3, 'april': 3,
+    'mei': 4, 'may': 4,
+    'jun': 5, 'juni': 5,
+    'jul': 6, 'juli': 6,
+    'agu': 7, 'agustus': 7,
+    'sep': 8, 'september': 8,
+    'okt': 9, 'oktober': 9,
+    'nov': 10, 'november': 10,
+    'des': 11, 'desember': 11
+  };
+
+  // Coba parse tanggal spesifik seperti "12 April" atau tanggal "2026-04-17"
+  let hariCocok = false;
+
+  // Format ISO: 2026-04-17
+  const isoMatch = hariStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const tgl = new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]));
+    hariCocok = (tgl.getFullYear() === now.getFullYear() &&
+                 tgl.getMonth()    === now.getMonth() &&
+                 tgl.getDate()     === now.getDate());
+  } else {
+    // Format "12 April" atau "Sabtu, 12 April"
+    let dayMatch = null;
+    for (const [nama, idx] of Object.entries(bulanMap)) {
+      const re = new RegExp(`(\\d{1,2})\\s+${nama}`);
+      const m  = hariStr.match(re);
+      if (m) {
+        const tglNum = parseInt(m[1]);
+        if (now.getMonth() === idx && now.getDate() === tglNum) {
+          hariCocok = true;
+        }
+        dayMatch = true;
+        break;
+      }
+    }
+
+    if (dayMatch === null) {
+      // Tidak ada tanggal spesifik, cek nama hari ("Setiap Sabtu", "Sabtu")
+      let namaHariCocok = false;
+      for (const [nama, val] of Object.entries(hariMap)) {
+        if (hariStr.includes(nama)) {
+          namaHariCocok = todayDay === val;
+          break;
+        }
+      }
+      hariCocok = namaHariCocok;
+    }
+  }
+
+  if (!hariCocok) return { buka: false, adaJadwal: true };
+
+  // Cek jam buka: format "09.00 - 12.00" atau "09:00 - 12:00"
+  const jamMatch = p.jam_buka.match(/(\d+)[.:]?(\d*)\s*-\s*(\d+)[.:]?(\d*)/);
+  if (!jamMatch) return { buka: true, adaJadwal: true }; // hari cocok, jam tidak terparsing → anggap buka
+
+  const menit1 = parseInt(jamMatch[1]) * 60 + parseInt(jamMatch[2] || '0');
+  const menit2 = parseInt(jamMatch[3]) * 60 + parseInt(jamMatch[4] || '0');
+  const menitSekarang = now.getHours() * 60 + now.getMinutes();
+
+  return {
+    buka: menitSekarang >= menit1 && menitSekarang <= menit2,
+    adaJadwal: true
+  };
+}
+
 // ─── Fetch dari Google Sheets (async) ────────────────────
 async function fetchSkriningMobileFromServer() {
   const url = _getScriptUrl();
@@ -468,14 +565,22 @@ function createDadakanPopup(p) {
     `<span class="popup-tag" style="background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);color:#fb923c;">${l}</span>`
   ).join('');
 
+  const { buka, adaJadwal } = getMobileStatus(p);
+  const statusHTML = adaJadwal
+    ? buka
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,.18);border:1px solid rgba(16,185,129,.35);color:#34d399;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;"><span style="width:6px;height:6px;background:#10b981;border-radius:50%;display:inline-block;"></span>Aktif</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;"><span style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block;"></span>Tutup</span>`
+    : `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(100,116,139,.15);border:1px solid rgba(100,116,139,.25);color:#94a3b8;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;">—</span>`;
+
   return `
     <div class="popup-wrapper">
       <div class="popup-header" style="background: linear-gradient(135deg,#ea580c,#c2410c);">
         <div class="popup-header-icon"><i class="fa-solid fa-bolt"></i></div>
-        <div>
+        <div style="flex:1;">
           <div class="popup-title">${p.nama}</div>
           <div class="popup-subtitle" style="color:#fed7aa;">📍 Tempat Skrining Mobile</div>
         </div>
+        <div style="margin-left:auto;">${statusHTML}</div>
       </div>
       <div class="popup-body">
         <div class="popup-info-row"><i class="fa-solid fa-map-pin"></i><span>${p.alamat}, ${p.kelurahan}</span></div>
@@ -634,13 +739,23 @@ function renderDadakanList() {
     return;
   }
 
-  container.innerHTML = data.map(p => `
-    <div class="dadakan-item" data-id="${p.id}">
+  container.innerHTML = data.map(p => {
+    const { buka, adaJadwal } = getMobileStatus(p);
+    const statusBadge = adaJadwal
+      ? buka
+        ? `<span class="mobile-status-badge mobile-status-aktif"><span class="mobile-status-dot"></span>Aktif</span>`
+        : `<span class="mobile-status-badge mobile-status-tutup"><span class="mobile-status-dot"></span>Tutup</span>`
+      : '';
+    return `
+    <div class="dadakan-item ${buka ? 'dadakan-item-aktif' : ''}" data-id="${p.id}">
       <div class="dadakan-item-header">
         <span class="dadakan-badge-tag">📍 Skrining Mobile</span>
-        <button class="dadakan-delete-btn" onclick="confirmDeleteDadakan(${p.id})" title="Hapus posyandu ini">
-          <i class="fa-solid fa-trash"></i>
-        </button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${statusBadge}
+          <button class="dadakan-delete-btn" onclick="confirmDeleteDadakan(${p.id})" title="Hapus">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
       </div>
       <div class="dadakan-item-name" onclick="onPosyanduClick(${p.id})">${p.nama}</div>
       <div class="dadakan-item-addr">
@@ -652,7 +767,8 @@ function renderDadakanList() {
       ${p.keterangan ? `<div class="dadakan-item-ket"><i class="fa-solid fa-circle-info"></i> ${p.keterangan}</div>` : ''}
       <div class="dadakan-item-added">Ditambahkan: ${p.ditambahkan}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // ─── Inject CSS Animasi Dadakan ──────────────────────────
@@ -937,6 +1053,51 @@ function renderDadakanList() {
     .dadakan-item-added {
       font-size: 9px; color: var(--text-muted, #64748b);
       margin-top: 6px; opacity: .7;
+    }
+
+    /* ── Status Badge Skrining Mobile ── */
+    .mobile-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+    .mobile-status-aktif {
+      background: rgba(16,185,129,.18);
+      border: 1px solid rgba(16,185,129,.35);
+      color: #34d399;
+    }
+    .mobile-status-tutup {
+      background: rgba(239,68,68,.15);
+      border: 1px solid rgba(239,68,68,.3);
+      color: #f87171;
+    }
+    .mobile-status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .mobile-status-aktif .mobile-status-dot {
+      background: #10b981;
+      box-shadow: 0 0 0 2px rgba(16,185,129,.3);
+      animation: pulse-green 1.8s ease-in-out infinite;
+    }
+    .mobile-status-tutup .mobile-status-dot {
+      background: #ef4444;
+    }
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,.5); }
+      50%       { box-shadow: 0 0 0 4px rgba(16,185,129,0); }
+    }
+    .dadakan-item-aktif {
+      border-color: rgba(16,185,129,.35) !important;
+      background: rgba(16,185,129,.05) !important;
     }
   `;
   document.head.appendChild(style);
