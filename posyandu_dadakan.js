@@ -85,11 +85,21 @@ function getMobileStatus(p) {
   // Coba parse tanggal spesifik seperti "12 April" atau tanggal "2026-04-17"
   let hariCocok = false;
 
-  // Format ISO: 2026-04-17
+  // Format ISO (date-only: "2026-04-17" ATAU full UTC: "2026-04-16T16:00:00.000Z")
   const isoMatch = hariStr.match(/(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) {
-    const tgl = new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]));
-    hariCocok = (tgl.getFullYear() === now.getFullYear() &&
+    let tgl;
+    // Jika ada komponen waktu (huruf 't' → UTC timestamp dari Google Sheets),
+    // gunakan new Date(original) agar browser mengkonversi ke waktu lokal (WIB +8).
+    // "2026-04-16T16:00:00.000Z" → lokal WIB = 2026-04-17 00:00
+    if (hariStr.includes('t') || hariStr.includes('z')) {
+      tgl = new Date(p.hari); // parse UTC → lokal otomatis
+    } else {
+      // Date-only string: buat sebagai waktu lokal (bukan UTC)
+      tgl = new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]));
+    }
+    hariCocok = (!isNaN(tgl) &&
+                 tgl.getFullYear() === now.getFullYear() &&
                  tgl.getMonth()    === now.getMonth() &&
                  tgl.getDate()     === now.getDate());
   } else {
