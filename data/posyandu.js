@@ -2,9 +2,7 @@
 // Kota Banjarbaru, Kalimantan Selatan
 // Sumber: Jadwal Posyandu GASKEUN Tahun 2026
 // Koordinat diekstrak dari Google Maps links resmi
-
 const POSYANDU_DATA = [
-
   // ── KELURAHAN GUNTUNG PAIKAT ──
   {
     id: 1,
@@ -142,7 +140,6 @@ const POSYANDU_DATA = [
     telp: "",
     status: "aktif"
   },
-
   // ── KELURAHAN LOKTABAT SELATAN ──
   {
     id: 10,
@@ -235,7 +232,6 @@ const POSYANDU_DATA = [
     status: "aktif",
     forceOpen: true  // Status buka dikunci manual (otomatis tidak berfungsi)
   },
-
   // ── KELURAHAN KEMUNING ──
   {
     id: 16,
@@ -297,9 +293,7 @@ const POSYANDU_DATA = [
     telp: "",
     status: "aktif"
   }
-
 ];
-
 // Puskesmas induk
 const PUSKESMAS = {
   nama: "Puskesmas Banjarbaru Selatan",
@@ -313,7 +307,6 @@ const PUSKESMAS = {
   maps_url: "https://maps.app.goo.gl/sMW3pumVANDzBxHv8",
   telp: ""
 };
-
 // Links monitoring & edukasi dari Excel
 const LINKS_TAMBAHAN = {
   monitoring_hipertensi: "https://forms.gle/841w4F3HAtMZgRhL6",
@@ -328,7 +321,6 @@ const LINKS_TAMBAHAN = {
     "https://youtu.be/2xdVIW9VAL8"
   ]
 };
-
 // Kategori layanan PTM dengan warna dan ikon
 const PTM_LAYANAN = {
   "Hipertensi": { icon: "fa-heart-pulse", color: "#ef4444", desc: "Tekanan darah tinggi ≥ 140/90 mmHg" },
