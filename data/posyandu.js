@@ -109,7 +109,8 @@ const POSYANDU_DATA = [
     layanan_ptm: ["Hipertensi", "Diabetes Melitus", "Kolesterol"],
     maps_url: "https://maps.app.goo.gl/qmzL4iU8cqd5kp4p7",
     telp: "",
-    status: "aktif"
+    status: "aktif",
+    forceOpen: true  // Status buka dikunci manual (otomatis tidak berfungsi)
   },
   {
     id: 8,
@@ -231,7 +232,8 @@ const POSYANDU_DATA = [
     layanan_ptm: ["Hipertensi", "Diabetes Melitus", "Obesitas"],
     maps_url: "https://maps.app.goo.gl/MQ6KTbzaLvbjtod96",
     telp: "",
-    status: "aktif"
+    status: "aktif",
+    forceOpen: true  // Status buka dikunci manual (otomatis tidak berfungsi)
   },
 
   // ── KELURAHAN KEMUNING ──
