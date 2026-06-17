@@ -331,6 +331,7 @@ function toRad(deg) { return deg * Math.PI / 180; }
  * Logika: cocokkan hari & minggu-ke berapa bulan ini, lalu cek jam.
  */
 function isPosyanduOpenNow(p) {
+  if (p.forceOpen === true) return true;
   const hariMap = {
     'minggu': 0, 'senin': 1, 'selasa': 2, 'rabu': 3,
     'kamis': 4, 'jumat': 5, 'sabtu': 6
@@ -377,6 +378,7 @@ function isPosyanduOpenNow(p) {
  * jadwalHariIni = true jika memang jadwal hari ini (tapi mungkin belum/sudah waktunya)
  */
 function getPosyanduStatus(p) {
+    if (p.forceOpen === true) return { buka: true, jadwalHariIni: true };
   const hariMap = {
     'minggu': 0, 'senin': 1, 'selasa': 2, 'rabu': 3,
     'kamis': 4, 'jumat': 5, 'sabtu': 6
